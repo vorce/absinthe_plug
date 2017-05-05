@@ -66,6 +66,32 @@ defmodule Absinthe.Plug.GraphiQLTest do
       "defaultUrl: window.location.origin + window.location.pathname")
   end
 
+  test "query_string option works" do
+    query_string = "# Hello world\n{}"
+    opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema,
+      query_string: query_string)
+
+    assert %{status: status, resp_body: body} = conn(:get, "/")
+    |> plug_parser
+    |> put_req_header("accept", "text/html")
+    |> Absinthe.Plug.GraphiQL.call(opts)
+
+    assert 200 == status
+    assert String.contains?(body, "defaultQuery: '#{query_string}'")
+  end
+
+  test "query_string unspecified " do
+    opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema)
+
+    assert %{status: status, resp_body: body} = conn(:get, "/")
+    |> plug_parser
+    |> put_req_header("accept", "text/html")
+    |> Absinthe.Plug.GraphiQL.call(opts)
+
+    assert 200 == status
+    assert String.contains?(body, "defaultQuery: ''")
+  end
+
   defp plug_parser(conn) do
     opts = Plug.Parsers.init(
       parsers: [:urlencoded, :multipart, :json],
