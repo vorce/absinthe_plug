@@ -67,9 +67,14 @@ defmodule Absinthe.Plug.GraphiQLTest do
   end
 
   test "query_string option works" do
-    query_string = "# Hello world\n{}"
+    query_string = """
+# Hello world
+{
+
+}
+    """
     opts = Absinthe.Plug.GraphiQL.init(schema: TestSchema,
-      query_string: query_string)
+      default_query_string: query_string)
 
     assert %{status: status, resp_body: body} = conn(:get, "/")
     |> plug_parser
@@ -77,7 +82,7 @@ defmodule Absinthe.Plug.GraphiQLTest do
     |> Absinthe.Plug.GraphiQL.call(opts)
 
     assert 200 == status
-    assert String.contains?(body, "defaultQuery: '#{query_string}'")
+    assert String.contains?(body, "defaultQuery: '# Hello world\\n")
   end
 
   test "query_string unspecified " do

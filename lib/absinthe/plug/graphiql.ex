@@ -79,7 +79,7 @@ defmodule Absinthe.Plug.GraphiQL do
     interface: :advanced | :simple,
     default_headers: {module, atom},
     default_url: binary,
-    query_string: binary,
+    default_query_string: binary,
   ]
 
   @doc false
@@ -90,7 +90,7 @@ defmodule Absinthe.Plug.GraphiQL do
     |> Map.put(:interface, Keyword.get(opts, :interface) || :advanced)
     |> Map.put(:default_headers, Keyword.get(opts, :default_headers))
     |> Map.put(:default_url, Keyword.get(opts, :default_url))
-    |> Map.put(:query_string, Keyword.get(opts, :query_string))
+    |> Map.put(:default_query_string, Keyword.get(opts, :default_query_string))
   end
 
   @doc false
@@ -121,7 +121,7 @@ defmodule Absinthe.Plug.GraphiQL do
     |> Poison.encode!(pretty: true)
 
     default_url = config[:default_url]
-    query_string = config[:query_string]
+    default_query_string = js_escape(config[:default_query_string])
 
     with {:ok, conn, request} <- Absinthe.Plug.Request.parse(conn, config),
          {:process, request} <- select_mode(request),
@@ -153,11 +153,11 @@ defmodule Absinthe.Plug.GraphiQL do
         |> js_escape
 
         conn
-        |> render_interface(interface, query: query, var_string: var_string,
+        |> render_interface(interface, query: query || default_query_string,
+                                       var_string: var_string,
                                        default_headers: default_headers,
                                        result: result,
-                                       default_url: default_url,
-                                       query: query_string)
+                                       default_url: default_url)
 
       {:input_error, msg} ->
         conn
@@ -167,7 +167,7 @@ defmodule Absinthe.Plug.GraphiQL do
          conn
          |> render_interface(interface, default_headers: default_headers,
                                         default_url: default_url,
-                                        query: query_string)
+                                        query: default_query_string)
 
       {:error, {:http_method, text}, _} ->
         conn
@@ -216,6 +216,7 @@ defmodule Absinthe.Plug.GraphiQL do
     |> send_resp(200, html)
   end
 
+  defp js_escape(nil), do: nil
   defp js_escape(string) do
     string
     |> String.replace(~r/\n/, "\\n")
